@@ -41,11 +41,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.app.pro.mayurone.data.local.entity.TenantEntity
 import com.app.pro.mayurone.data.local.model.CalculationBasis
 import com.app.pro.mayurone.data.local.model.EstimateStatus
 import com.app.pro.mayurone.data.repository.EstimateItemDraft
 import com.app.pro.mayurone.domain.CalculationEngine
+import com.app.pro.mayurone.ui.theme.MayurOneTheme
 import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +60,52 @@ fun EstimateFormScreen(
 ) {
     val activeTenant by viewModel.activeTenant.collectAsState()
 
+    EstimateFormScreen(
+        activeTenant = activeTenant,
+        existingEstimateId = existingEstimateId,
+        onNavigateBack = onNavigateBack,
+        onSaveEstimate = { name, phone, address, notes, items, status ->
+            if (existingEstimateId != null) {
+                viewModel.createNewRevision(
+                    estimateId = existingEstimateId,
+                    customerName = name,
+                    customerPhone = phone,
+                    customerAddress = address,
+                    notes = notes,
+                    items = items,
+                    status = status,
+                    onCreated = { onNavigateBack() }
+                )
+            } else {
+                viewModel.createEstimate(
+                    customerName = name,
+                    customerPhone = phone,
+                    customerAddress = address,
+                    notes = notes,
+                    items = items,
+                    status = status,
+                    onCreated = { onNavigateBack() }
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EstimateFormScreen(
+    activeTenant: TenantEntity?,
+    existingEstimateId: String? = null,
+    onNavigateBack: () -> Unit = {},
+    onSaveEstimate: (
+        name: String,
+        phone: String,
+        address: String,
+        notes: String,
+        items: List<EstimateItemDraft>,
+        status: EstimateStatus
+    ) -> Unit = { _, _, _, _, _, _ -> }
+) {
     var customerName by remember { mutableStateOf("") }
     var customerPhone by remember { mutableStateOf("") }
     var customerAddress by remember { mutableStateOf("") }
@@ -67,7 +116,6 @@ fun EstimateFormScreen(
     // Populate existing revision if editing / creating new revision
     LaunchedEffect(existingEstimateId) {
         if (existingEstimateId != null) {
-            val estimate = viewModel.repository.getEstimateFlow(existingEstimateId)
             // Load latest revision details if editing
         } else if (itemDrafts.isEmpty()) {
             itemDrafts.add(EstimateItemDraftState(description = "Mild Steel Frame", quantity = "1.0", rate = "1500.0", calculationBasis = CalculationBasis.QTY_X_RATE))
@@ -91,28 +139,7 @@ fun EstimateFormScreen(
 
         val name = customerName.ifBlank { "Walk-in Customer" }
 
-        if (existingEstimateId != null) {
-            viewModel.createNewRevision(
-                estimateId = existingEstimateId,
-                customerName = name,
-                customerPhone = customerPhone,
-                customerAddress = customerAddress,
-                notes = notes,
-                items = drafts,
-                status = status,
-                onCreated = { onNavigateBack() }
-            )
-        } else {
-            viewModel.createEstimate(
-                customerName = name,
-                customerPhone = customerPhone,
-                customerAddress = customerAddress,
-                notes = notes,
-                items = drafts,
-                status = status,
-                onCreated = { onNavigateBack() }
-            )
-        }
+        onSaveEstimate(name, customerPhone, customerAddress, notes, drafts, status)
     }
 
     Scaffold(
@@ -371,3 +398,23 @@ class EstimateItemDraftState(
             return CalculationEngine.calculateItemAmount(calculationBasis, q, w, r)
         }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun EstimateFormScreenPreview() {
+    val sampleTenant = TenantEntity(
+        tenantId = "tenant_1",
+        businessName = "Mayur Traders",
+        ownerName = "Mayur Patel",
+        phone = "9876543210",
+        address = "123 Market Yard, Ahmedabad",
+        currencySymbol = "₹"
+    )
+
+    MayurOneTheme {
+        EstimateFormScreen(
+            activeTenant = sampleTenant
+        )
+    }
+}
+
