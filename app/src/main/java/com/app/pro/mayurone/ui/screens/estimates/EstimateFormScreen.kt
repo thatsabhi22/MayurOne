@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -41,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +61,7 @@ import com.app.pro.mayurone.data.repository.EstimateItemDraft
 import com.app.pro.mayurone.domain.CalculationEngine
 import com.app.pro.mayurone.ui.theme.MayurOneTheme
 import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -286,6 +291,7 @@ fun EstimateFormScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .imePadding()
         ) {
             LazyColumn(
                 modifier = Modifier
@@ -774,8 +780,13 @@ fun TabularItemRow(
     showValidationErrors: Boolean = false,
     onRemove: () -> Unit
 ) {
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val coroutineScope = rememberCoroutineScope()
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoViewRequester),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Qty
@@ -788,8 +799,13 @@ fun TabularItemRow(
             modifier = Modifier
                 .width(48.dp)
                 .onFocusChanged { focusState ->
-                    if (focusState.isFocused && (state.quantity == "1" || state.quantity == "1.0" || state.quantity == "0")) {
-                        state.quantity = ""
+                    if (focusState.isFocused) {
+                        if (state.quantity == "1" || state.quantity == "1.0" || state.quantity == "0") {
+                            state.quantity = ""
+                        }
+                        coroutineScope.launch {
+                            bringIntoViewRequester.bringIntoView()
+                        }
                     }
                 },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -805,7 +821,15 @@ fun TabularItemRow(
             onValueChange = { state.description = it },
             placeholder = { Text("Item...", style = MaterialTheme.typography.bodySmall) },
             isError = showValidationErrors && !state.isDescriptionValid,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        coroutineScope.launch {
+                            bringIntoViewRequester.bringIntoView()
+                        }
+                    }
+                },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium
         )
@@ -835,8 +859,13 @@ fun TabularItemRow(
             modifier = Modifier
                 .width(58.dp)
                 .onFocusChanged { focusState ->
-                    if (focusState.isFocused && (state.weight == "0" || state.weight == "0.0" || state.weight == "0.00")) {
-                        state.weight = ""
+                    if (focusState.isFocused) {
+                        if (state.weight == "0" || state.weight == "0.0" || state.weight == "0.00") {
+                            state.weight = ""
+                        }
+                        coroutineScope.launch {
+                            bringIntoViewRequester.bringIntoView()
+                        }
                     }
                 },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -864,8 +893,13 @@ fun TabularItemRow(
             modifier = Modifier
                 .width(58.dp)
                 .onFocusChanged { focusState ->
-                    if (focusState.isFocused && (state.rate == "0" || state.rate == "0.0" || state.rate == "0.00")) {
-                        state.rate = ""
+                    if (focusState.isFocused) {
+                        if (state.rate == "0" || state.rate == "0.0" || state.rate == "0.00") {
+                            state.rate = ""
+                        }
+                        coroutineScope.launch {
+                            bringIntoViewRequester.bringIntoView()
+                        }
                     }
                 },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),

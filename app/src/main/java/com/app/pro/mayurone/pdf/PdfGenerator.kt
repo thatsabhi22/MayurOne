@@ -183,7 +183,18 @@ object PdfGenerator {
         val dir = File(context.cacheDir, "estimates")
         if (!dir.exists()) dir.mkdirs()
 
-        val file = File(dir, "${estimate.estimateNumber}_Rev${revision.revisionNumber}.pdf")
+        val estNumClean = estimate.estimateNumber.trim().replace("[^a-zA-Z0-9_-]".toRegex(), "_")
+        val rawCustomer = revision.customerName.trim()
+        val isCustomCustomer = rawCustomer.isNotBlank() && !rawCustomer.equals("Walk-in Customer", ignoreCase = true)
+
+        val fileName = if (isCustomCustomer) {
+            val custNameClean = rawCustomer.replace("[^a-zA-Z0-9_-]".toRegex(), "_").replace("_+".toRegex(), "_")
+            "${custNameClean}_${estNumClean}_Rev${revision.revisionNumber}.pdf"
+        } else {
+            "${estNumClean}_Rev${revision.revisionNumber}.pdf"
+        }
+
+        val file = File(dir, fileName)
         val outputStream = FileOutputStream(file)
         pdfDocument.writeTo(outputStream)
         outputStream.close()
