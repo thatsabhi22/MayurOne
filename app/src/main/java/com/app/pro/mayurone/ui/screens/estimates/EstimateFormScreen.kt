@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -121,8 +122,8 @@ fun EstimateFormScreen(
             itemDrafts.add(
                 EstimateItemDraftState(
                     description = "Mild Steel Frame",
-                    quantity = "1.0",
-                    rate = "1500.0",
+                    quantity = "1",
+                    rate = "1500",
                     calculationBasis = CalculationBasis.QTY_X_RATE
                 )
             )
@@ -169,7 +170,7 @@ fun EstimateFormScreen(
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(16.dp),
+                    .padding(6.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
@@ -366,29 +367,69 @@ fun ItemDraftCard(
                 if (state.calculationBasis == CalculationBasis.QTY_X_RATE) {
                     OutlinedTextField(
                         value = state.quantity,
-                        onValueChange = { state.quantity = it },
+                        onValueChange = { newValue ->
+                            state.quantity = newValue.filter { it.isDigit() }
+                        },
                         label = { Text("Quantity") },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .onFocusChanged { focusState ->
+                                if (focusState.isFocused && (state.quantity == "1" || state.quantity == "1.0" || state.quantity == "0" || state.quantity == "0.0")) {
+                                    state.quantity = ""
+                                }
+                            },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
                     )
                 } else {
                     OutlinedTextField(
                         value = state.weight,
-                        onValueChange = { state.weight = it },
+                        onValueChange = { newValue ->
+                            val filtered = newValue.filter { it.isDigit() || it == '.' }
+                            val parts = filtered.split(".")
+                            if (parts.size <= 2) {
+                                state.weight = if (parts.size == 2 && parts[1].length > 2) {
+                                    "${parts[0]}.${parts[1].take(2)}"
+                                } else {
+                                    filtered
+                                }
+                            }
+                        },
                         label = { Text("Weight (kg)") },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier
+                            .weight(1f)
+                            .onFocusChanged { focusState ->
+                                if (focusState.isFocused && (state.weight == "0" || state.weight == "0.0" || state.weight == "0.00")) {
+                                    state.weight = ""
+                                }
+                            },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         singleLine = true
                     )
                 }
 
                 OutlinedTextField(
                     value = state.rate,
-                    onValueChange = { state.rate = it },
+                    onValueChange = { newValue ->
+                        val filtered = newValue.filter { it.isDigit() || it == '.' }
+                        val parts = filtered.split(".")
+                        if (parts.size <= 2) {
+                            state.rate = if (parts.size == 2 && parts[1].length > 2) {
+                                "${parts[0]}.${parts[1].take(2)}"
+                            } else {
+                                filtered
+                            }
+                        }
+                    },
                     label = { Text("Rate (₹)") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .weight(1f)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused && (state.rate == "0" || state.rate == "0.0" || state.rate == "0.00")) {
+                                state.rate = ""
+                            }
+                        },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true
                 )
             }
@@ -412,9 +453,9 @@ fun ItemDraftCard(
 
 class EstimateItemDraftState(
     description: String = "",
-    quantity: String = "1.0",
-    weight: String = "0.0",
-    rate: String = "0.0",
+    quantity: String = "1",
+    weight: String = "0.00",
+    rate: String = "0.00",
     calculationBasis: CalculationBasis = CalculationBasis.QTY_X_RATE
 ) {
     var description by mutableStateOf(description)

@@ -46,48 +46,59 @@ fun MayurOneApp(viewModel: MayurOneViewModel) {
         NavigationItem("Settings", Screen.Settings.route, Icons.Default.Settings)
     )
 
+    val topLevelRoutes = listOf(
+        Screen.Estimates.route,
+        Screen.Customers.route,
+        Screen.Settings.route
+    )
+    val isTopLevelDestination = currentRoute in topLevelRoutes
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = activeTenant?.businessName ?: "MayurOne SaaS",
-                        fontWeight = FontWeight.Bold
+            if (isTopLevelDestination) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = activeTenant?.businessName ?: "MayurOne SaaS",
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    actions = {
+                        val syncIcon = if (pendingSyncCount > 0) Icons.Default.Sync else Icons.Default.CloudDone
+                        Icon(
+                            imageVector = syncIcon,
+                            contentDescription = "Sync Status",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(end = 16.dp)
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                },
-                actions = {
-                    val syncIcon = if (pendingSyncCount > 0) Icons.Default.Sync else Icons.Default.CloudDone
-                    Icon(
-                        imageVector = syncIcon,
-                        contentDescription = "Sync Status",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(end = 16.dp)
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            )
+            }
         },
         bottomBar = {
-            NavigationBar {
-                bottomNavItems.forEach { item ->
-                    val selected = currentRoute == item.route
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+            if (isTopLevelDestination) {
+                NavigationBar {
+                    bottomNavItems.forEach { item ->
+                        val selected = currentRoute == item.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) }
-                    )
+                            },
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label) }
+                        )
+                    }
                 }
             }
         }

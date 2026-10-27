@@ -1,5 +1,6 @@
 package com.app.pro.mayurone.ui.screens.estimates
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -72,23 +73,8 @@ fun EstimateDetailScreen(
         .collectAsState(initial = emptyList())
 
     val currentRevision = revisions.firstOrNull()
-    val items by currentRevision?.let {
-        viewModel.getItemsForRevisionFlow(it.revisionId).collectAsState(initial = emptyList())
-    } ?: remember { androidx.compose.runtime.mutableStateOf(emptyList()) }
-
-    fun sharePdf(targetWhatsApp: Boolean) {
-        val t = activeTenant ?: return
-        val e = estimate ?: return
-        val r = currentRevision ?: return
-
-        val file = PdfGenerator.generateEstimatePdf(context, t, e, r, items)
-        val fileUri = PdfGenerator.getFileUri(context, file)
-
-        val channel = if (targetWhatsApp) ShareChannel.WHATSAPP else ShareChannel.SYSTEM_SHARE
-        viewModel.logShareEvent(e.estimateId, r.revisionId, channel)
-
-        ShareHelper.sharePdf(context, fileUri, targetWhatsApp)
-    }
+    val items by viewModel.getItemsForRevisionFlow(currentRevision?.revisionId ?: "")
+        .collectAsState(initial = emptyList())
 
     EstimateDetailScreen(
         estimate = estimate,
@@ -98,7 +84,36 @@ fun EstimateDetailScreen(
         activeTenant = activeTenant,
         onNavigateBack = onNavigateBack,
         onNavigateToNewRevision = { onNavigateToNewRevision(estimateId) },
-        onSharePdf = ::sharePdf
+        onSharePdf = { targetWhatsApp ->
+            val e = estimate
+            val r = revisions.firstOrNull()
+            if (e == null || r == null) {
+                Toast.makeText(context, "Estimate data loading, please try again", Toast.LENGTH_SHORT).show()
+                return@EstimateDetailScreen
+            }
+
+            val t = activeTenant ?: TenantEntity(
+                tenantId = e.tenantId,
+                businessName = "Mayur Fabrication Shop",
+                ownerName = "Shop Owner",
+                phone = "+91 98765 43210",
+                address = "Industrial Area, Phase 1",
+                currencySymbol = "₹"
+            )
+
+            try {
+                val file = PdfGenerator.generateEstimatePdf(context, t, e, r, items)
+                val fileUri = PdfGenerator.getFileUri(context, file)
+
+                val channel = if (targetWhatsApp) ShareChannel.WHATSAPP else ShareChannel.SYSTEM_SHARE
+                viewModel.logShareEvent(e.estimateId, r.revisionId, channel)
+
+                ShareHelper.sharePdf(context, fileUri, targetWhatsApp)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                Toast.makeText(context, "Error generating PDF: ${ex.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+        }
     )
 }
 
