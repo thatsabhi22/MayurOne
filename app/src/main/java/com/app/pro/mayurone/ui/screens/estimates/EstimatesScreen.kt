@@ -45,10 +45,10 @@ import com.app.pro.mayurone.data.local.model.EstimateStatus
 import com.app.pro.mayurone.domain.CalculationEngine
 import com.app.pro.mayurone.ui.theme.MayurOneTheme
 import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
+import kotlinx.coroutines.flow.Flow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun EstimatesScreen(
@@ -138,7 +138,9 @@ fun EstimatesScreen(
                         Icon(
                             imageVector = Icons.Default.ReceiptLong,
                             contentDescription = null,
-                            modifier = Modifier.height(64.dp).width(64.dp),
+                            modifier = Modifier
+                                .height(64.dp)
+                                .width(64.dp),
                             tint = MaterialTheme.colorScheme.outline
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -185,7 +187,8 @@ fun EstimateCard(
     onClick: () -> Unit
 ) {
     val currentRevision = estimate.currentRevisionId?.let { revId ->
-        getRevision?.invoke(revId) ?: getRevisionFlow?.invoke(revId)?.collectAsState(initial = null)?.value
+        getRevision?.invoke(revId) ?: getRevisionFlow?.invoke(revId)
+            ?.collectAsState(initial = null)?.value
     }
 
     Card(

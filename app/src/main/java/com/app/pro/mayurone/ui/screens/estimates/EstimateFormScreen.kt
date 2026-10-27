@@ -118,7 +118,14 @@ fun EstimateFormScreen(
         if (existingEstimateId != null) {
             // Load latest revision details if editing
         } else if (itemDrafts.isEmpty()) {
-            itemDrafts.add(EstimateItemDraftState(description = "Mild Steel Frame", quantity = "1.0", rate = "1500.0", calculationBasis = CalculationBasis.QTY_X_RATE))
+            itemDrafts.add(
+                EstimateItemDraftState(
+                    description = "Mild Steel Frame",
+                    quantity = "1.0",
+                    rate = "1500.0",
+                    calculationBasis = CalculationBasis.QTY_X_RATE
+                )
+            )
         }
     }
 
@@ -166,7 +173,11 @@ fun EstimateFormScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Text("Customer Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Customer Information",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = customerName,
@@ -201,7 +212,11 @@ fun EstimateFormScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Estimate Line Items", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            "Estimate Line Items",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                         OutlinedButton(
                             onClick = {
                                 itemDrafts.add(EstimateItemDraftState())
@@ -223,7 +238,11 @@ fun EstimateFormScreen(
                 }
 
                 item {
-                    Text("Notes & Terms", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Notes & Terms",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = notes,
@@ -246,9 +265,15 @@ fun EstimateFormScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Total Estimated Amount:", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = CalculationEngine.formatCurrency(totalAmount, activeTenant?.currencySymbol ?: "₹"),
+                            "Total Estimated Amount:",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = CalculationEngine.formatCurrency(
+                                totalAmount,
+                                activeTenant?.currencySymbol ?: "₹"
+                            ),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -297,9 +322,17 @@ fun ItemDraftCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Item #$index", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "Item #$index",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
                 IconButton(onClick = onRemove) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete Item", tint = MaterialTheme.colorScheme.error)
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete Item",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
 

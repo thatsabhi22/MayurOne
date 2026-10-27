@@ -19,9 +19,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,8 +66,10 @@ fun EstimateDetailScreen(
     val activeTenant by viewModel.activeTenant.collectAsState()
 
     val estimate by viewModel.getEstimateFlow(estimateId).collectAsState(initial = null)
-    val revisions by viewModel.getRevisionsForEstimateFlow(estimateId).collectAsState(initial = emptyList())
-    val shareEvents by viewModel.getShareEventsFlow(estimateId).collectAsState(initial = emptyList())
+    val revisions by viewModel.getRevisionsForEstimateFlow(estimateId)
+        .collectAsState(initial = emptyList())
+    val shareEvents by viewModel.getShareEventsFlow(estimateId)
+        .collectAsState(initial = emptyList())
 
     val currentRevision = revisions.firstOrNull()
     val items by currentRevision?.let {
@@ -155,7 +155,8 @@ fun EstimateDetailScreen(
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    val dateFormat = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+                                    val dateFormat =
+                                        SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
                                     Text(
                                         text = dateFormat.format(Date(rev.createdAt)),
                                         style = MaterialTheme.typography.bodySmall
@@ -163,7 +164,12 @@ fun EstimateDetailScreen(
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Total: ${CalculationEngine.formatCurrency(rev.totalAmount, activeTenant?.currencySymbol ?: "₹")}",
+                                    text = "Total: ${
+                                        CalculationEngine.formatCurrency(
+                                            rev.totalAmount,
+                                            activeTenant?.currencySymbol ?: "₹"
+                                        )
+                                    }",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -175,21 +181,39 @@ fun EstimateDetailScreen(
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("CUSTOMER DETAILS", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "CUSTOMER DETAILS",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Name: ${rev.customerName}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Name: ${rev.customerName}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                                 if (rev.customerPhone.isNotBlank()) {
-                                    Text("Phone: ${rev.customerPhone}", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        "Phone: ${rev.customerPhone}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                 }
                                 if (rev.customerAddress.isNotBlank()) {
-                                    Text("Address: ${rev.customerAddress}", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        "Address: ${rev.customerAddress}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                 }
                             }
                         }
                     }
 
                     item {
-                        Text("LINE ITEMS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            "LINE ITEMS",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
 
                     items(items, key = { it.itemId }) { item ->
@@ -202,13 +226,22 @@ fun EstimateDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(item.description, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                                    val basisLabel = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) {
-                                        "${item.quantity} × ₹${item.rate}"
-                                    } else {
-                                        "${item.weight} kg × ₹${item.rate}"
-                                    }
-                                    Text(basisLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        item.description,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    val basisLabel =
+                                        if (item.calculationBasis == CalculationBasis.QTY_X_RATE) {
+                                            "${item.quantity} × ₹${item.rate}"
+                                        } else {
+                                            "${item.weight} kg × ₹${item.rate}"
+                                        }
+                                    Text(
+                                        basisLabel,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                                 Text(
                                     text = "₹ ${item.amount}",
@@ -224,7 +257,11 @@ fun EstimateDetailScreen(
                         item {
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    Text("Notes & Terms", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        "Notes & Terms",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(rev.notes, style = MaterialTheme.typography.bodyMedium)
                                 }
@@ -234,12 +271,21 @@ fun EstimateDetailScreen(
 
                     if (shareEvents.isNotEmpty()) {
                         item {
-                            Text("SHARE ACTIVITY LOG", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text(
+                                "SHARE ACTIVITY LOG",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                         items(shareEvents, key = { it.shareId }) { share ->
-                            val dateFormat = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+                            val dateFormat =
+                                SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
                             Text(
-                                text = "• Shared via ${share.channel.name} on ${dateFormat.format(Date(share.sharedAt))}",
+                                text = "• Shared via ${share.channel.name} on ${
+                                    dateFormat.format(
+                                        Date(share.sharedAt)
+                                    )
+                                }",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

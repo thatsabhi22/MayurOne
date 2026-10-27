@@ -113,10 +113,17 @@ fun CustomersScreen(
                                         fontWeight = FontWeight.Bold
                                     )
                                     if (customer.phone.isNotBlank()) {
-                                        Text("Phone: ${customer.phone}", style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            "Phone: ${customer.phone}",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
                                     }
                                     if (customer.address.isNotBlank()) {
-                                        Text("Address: ${customer.address}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(
+                                            "Address: ${customer.address}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
                             }
