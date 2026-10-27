@@ -244,12 +244,15 @@ fun EstimateDetailScreen(
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold
                                     )
-                                    val basisLabel =
-                                        if (item.calculationBasis == CalculationBasis.QTY_X_RATE) {
-                                            "${item.quantity} × ₹${item.rate}"
-                                        } else {
-                                            "${item.weight} kg × ₹${item.rate}"
-                                        }
+                                    val qtyStr = if (item.quantity % 1.0 == 0.0) item.quantity.toLong().toString() else item.quantity.toString()
+                                    val weightStr = if (item.weight % 1.0 == 0.0) item.weight.toLong().toString() else String.format(Locale.US, "%.2f", item.weight)
+                                    val rateStr = if (item.rate % 1.0 == 0.0) item.rate.toLong().toString() else String.format(Locale.US, "%.2f", item.rate)
+
+                                    val basisLabel = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) {
+                                        "Qty: $qtyStr × ₹$rateStr"
+                                    } else {
+                                        "Qty: $qtyStr • $weightStr kg × ₹$rateStr"
+                                    }
                                     Text(
                                         basisLabel,
                                         style = MaterialTheme.typography.bodySmall,
@@ -262,22 +265,6 @@ fun EstimateDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
-                            }
-                        }
-                    }
-
-                    if (rev.notes.isNotBlank()) {
-                        item {
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(
-                                        "Notes & Terms",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(rev.notes, style = MaterialTheme.typography.bodyMedium)
-                                }
                             }
                         }
                     }

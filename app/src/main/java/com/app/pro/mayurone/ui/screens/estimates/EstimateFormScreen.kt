@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -91,7 +92,7 @@ fun EstimateFormScreen(
         initialCustomerName = latestRevision?.customerName ?: "",
         initialCustomerPhone = latestRevision?.customerPhone ?: "",
         initialCustomerAddress = latestRevision?.customerAddress ?: "",
-        initialNotes = latestRevision?.notes ?: "Valid for 15 days. Payment terms: 50% advance.",
+        initialNotes = latestRevision?.notes ?: "",
         initialItems = existingItems,
         nextRevisionNumber = (latestRevision?.revisionNumber ?: 0) + 1,
         useTabularForm = useTabularForm,
@@ -132,7 +133,7 @@ fun EstimateFormScreen(
     initialCustomerName: String = "",
     initialCustomerPhone: String = "",
     initialCustomerAddress: String = "",
-    initialNotes: String = "Valid for 15 days. Payment terms: 50% advance.",
+    initialNotes: String = "",
     initialItems: List<EstimateItemEntity> = emptyList(),
     nextRevisionNumber: Int = 1,
     useTabularForm: Boolean = true,
@@ -150,7 +151,7 @@ fun EstimateFormScreen(
     var customerName by remember(initialCustomerName) { mutableStateOf(initialCustomerName) }
     var customerPhone by remember(initialCustomerPhone) { mutableStateOf(initialCustomerPhone) }
     var customerAddress by remember(initialCustomerAddress) { mutableStateOf(initialCustomerAddress) }
-    var notes by remember(initialNotes) { mutableStateOf(initialNotes) }
+    val notes = initialNotes
 
     val itemDrafts = remember { mutableStateListOf<EstimateItemDraftState>() }
 
@@ -189,7 +190,11 @@ fun EstimateFormScreen(
         itemDrafts.map { it.calculatedAmount }
     )
 
-    fun handleSave(status: EstimateStatus) {
+    var showValidationErrorDialog by remember { mutableStateOf(false) }
+    var pendingSaveStatus by remember { mutableStateOf<EstimateStatus?>(null) }
+    var showValidationErrors by remember { mutableStateOf(false) }
+
+    fun proceedSave(status: EstimateStatus) {
         val drafts = itemDrafts.map {
             EstimateItemDraft(
                 description = it.description.ifBlank { "Unspecified Item" },
@@ -203,6 +208,58 @@ fun EstimateFormScreen(
         val name = customerName.ifBlank { "Walk-in Customer" }
 
         onSaveEstimate(name, customerPhone, customerAddress, notes, drafts, status)
+    }
+
+    fun handleSave(status: EstimateStatus) {
+        val hasInvalidRows = itemDrafts.isEmpty() || itemDrafts.any { !it.isValid }
+
+        if (hasInvalidRows) {
+            showValidationErrors = true
+            pendingSaveStatus = status
+            showValidationErrorDialog = true
+        } else {
+            proceedSave(status)
+        }
+    }
+
+    if (showValidationErrorDialog) {
+        val invalidCount = itemDrafts.count { !it.isValid }
+        val dialogMessage = if (itemDrafts.isEmpty()) {
+            "Please add at least one line item before saving."
+        } else {
+            "There ${if (invalidCount == 1) "is 1 row" else "are $invalidCount rows"} with missing or zero Quantity, Item Details, Rate, or Weight.\n\nIncomplete fields are highlighted with RED borders. Would you like to remove the incomplete rows or fix them?"
+        }
+
+        AlertDialog(
+            onDismissRequest = { showValidationErrorDialog = false },
+            title = { Text("Incomplete Item Rows", fontWeight = FontWeight.Bold) },
+            text = { Text(dialogMessage) },
+            confirmButton = {
+                if (itemDrafts.isNotEmpty()) {
+                    Button(
+                        onClick = {
+                            showValidationErrorDialog = false
+                            itemDrafts.removeAll { !it.isValid }
+                            val targetStatus = pendingSaveStatus
+                            if (itemDrafts.isNotEmpty() && targetStatus != null) {
+                                proceedSave(targetStatus)
+                            }
+                        }
+                    ) {
+                        Text("Remove Empty Rows & Save")
+                    }
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showValidationErrorDialog = false
+                    }
+                ) {
+                    Text(if (itemDrafts.isEmpty()) "OK" else "Fix Details")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -281,6 +338,7 @@ fun EstimateFormScreen(
                         TabularItemGrid(
                             items = itemDrafts,
                             currencySymbol = activeTenant?.currencySymbol ?: "₹",
+                            showValidationErrors = showValidationErrors,
                             onAddItem = { itemDrafts.add(EstimateItemDraftState()) },
                             onRemoveItem = { index -> itemDrafts.removeAt(index) }
                         )
@@ -313,24 +371,10 @@ fun EstimateFormScreen(
                         ItemDraftCard(
                             index = index + 1,
                             state = itemState,
+                            showValidationErrors = showValidationErrors,
                             onRemove = { itemDrafts.removeAt(index) }
                         )
                     }
-                }
-
-                item {
-                    Text(
-                        "Notes & Terms",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2
-                    )
                 }
             }
 
@@ -391,6 +435,7 @@ fun EstimateFormScreen(
 fun ItemDraftCard(
     index: Int,
     state: EstimateItemDraftState,
+    showValidationErrors: Boolean = false,
     onRemove: () -> Unit
 ) {
     Card(
@@ -421,6 +466,7 @@ fun ItemDraftCard(
                 value = state.description,
                 onValueChange = { state.description = it },
                 label = { Text("Item Description *") },
+                isError = showValidationErrors && !state.isDescriptionValid,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -451,6 +497,7 @@ fun ItemDraftCard(
                             state.quantity = newValue.filter { it.isDigit() }
                         },
                         label = { Text("Quantity") },
+                        isError = showValidationErrors && !state.isQuantityValid,
                         modifier = Modifier
                             .weight(1f)
                             .onFocusChanged { focusState ->
@@ -476,6 +523,7 @@ fun ItemDraftCard(
                             }
                         },
                         label = { Text("Weight (kg)") },
+                        isError = showValidationErrors && !state.isWeightValid,
                         modifier = Modifier
                             .weight(1f)
                             .onFocusChanged { focusState ->
@@ -502,6 +550,7 @@ fun ItemDraftCard(
                         }
                     },
                     label = { Text("Rate (₹)") },
+                    isError = showValidationErrors && !state.isRateValid,
                     modifier = Modifier
                         .weight(1f)
                         .onFocusChanged { focusState ->
@@ -544,6 +593,23 @@ class EstimateItemDraftState(
     var rate by mutableStateOf(rate)
     var calculationBasis by mutableStateOf(calculationBasis)
 
+    val isQuantityValid: Boolean
+        get() = quantity.isNotBlank() && (quantity.toDoubleOrNull() ?: 0.0) > 0.0
+
+    val isDescriptionValid: Boolean
+        get() = description.isNotBlank()
+
+    val isRateValid: Boolean
+        get() = rate.isNotBlank() && (rate.toDoubleOrNull() ?: 0.0) > 0.0
+
+    val isWeightValid: Boolean
+        get() = if (calculationBasis == CalculationBasis.WEIGHT_X_RATE) {
+            weight.isNotBlank() && (weight.toDoubleOrNull() ?: 0.0) > 0.0
+        } else true
+
+    val isValid: Boolean
+        get() = isDescriptionValid && isQuantityValid && isRateValid && isWeightValid
+
     val calculatedAmount: Double
         get() {
             val q = quantity.toDoubleOrNull() ?: 0.0
@@ -576,6 +642,7 @@ fun EstimateFormScreenPreview() {
 fun TabularItemGrid(
     items: List<EstimateItemDraftState>,
     currencySymbol: String,
+    showValidationErrors: Boolean = false,
     onAddItem: () -> Unit,
     onRemoveItem: (Int) -> Unit
 ) {
@@ -640,6 +707,7 @@ fun TabularItemGrid(
                 TabularItemRow(
                     state = state,
                     currencySymbol = currencySymbol,
+                    showValidationErrors = showValidationErrors,
                     onRemove = { onRemoveItem(index) }
                 )
                 if (index < items.size - 1) {
@@ -703,6 +771,7 @@ fun TabularItemGrid(
 fun TabularItemRow(
     state: EstimateItemDraftState,
     currencySymbol: String,
+    showValidationErrors: Boolean = false,
     onRemove: () -> Unit
 ) {
     Row(
@@ -715,6 +784,7 @@ fun TabularItemRow(
             onValueChange = { newValue ->
                 state.quantity = newValue.filter { it.isDigit() }
             },
+            isError = showValidationErrors && !state.isQuantityValid,
             modifier = Modifier
                 .width(48.dp)
                 .onFocusChanged { focusState ->
@@ -734,6 +804,7 @@ fun TabularItemRow(
             value = state.description,
             onValueChange = { state.description = it },
             placeholder = { Text("Item...", style = MaterialTheme.typography.bodySmall) },
+            isError = showValidationErrors && !state.isDescriptionValid,
             modifier = Modifier.weight(1f),
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium
@@ -760,6 +831,7 @@ fun TabularItemRow(
                     }
                 }
             },
+            isError = showValidationErrors && !state.isWeightValid,
             modifier = Modifier
                 .width(58.dp)
                 .onFocusChanged { focusState ->
@@ -788,6 +860,7 @@ fun TabularItemRow(
                     }
                 }
             },
+            isError = showValidationErrors && !state.isRateValid,
             modifier = Modifier
                 .width(58.dp)
                 .onFocusChanged { focusState ->
@@ -825,5 +898,6 @@ fun TabularItemRow(
         }
     }
 }
+
 
 
