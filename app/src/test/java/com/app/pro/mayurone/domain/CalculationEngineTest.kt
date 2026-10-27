@@ -29,6 +29,18 @@ class CalculationEngineTest {
     }
 
     @Test
+    fun calculateItemAmount_weightBasedWithQuantityGreaterThanOne() {
+        val amount = CalculationEngine.calculateItemAmount(
+            basis = CalculationBasis.WEIGHT_X_RATE,
+            quantity = 2.0,
+            weight = 18.5,
+            rate = 120.0
+        )
+        // 2 * 18.5 * 120 = 4440.0
+        assertEquals(4440.0, amount, 0.001)
+    }
+
+    @Test
     fun calculateTotal_sumsItemsCorrectly() {
         val total = CalculationEngine.calculateTotal(listOf(600.0, 3400.0, 150.75))
         assertEquals(4150.75, total, 0.001)

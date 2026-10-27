@@ -13,9 +13,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -38,6 +40,7 @@ import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
 fun SettingsScreen(viewModel: MayurOneViewModel) {
     val activeTenant by viewModel.activeTenant.collectAsState()
     val pendingSyncCount by viewModel.pendingSyncCount.collectAsState()
+    val useTabularForm by viewModel.useTabularForm.collectAsState()
 
     var businessName by remember { mutableStateOf("") }
     var ownerName by remember { mutableStateOf("") }
@@ -67,6 +70,47 @@ fun SettingsScreen(viewModel: MayurOneViewModel) {
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            // Estimate Input Style Card
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.TableChart, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.padding(4.dp))
+                            Text("Estimate Form Input Style", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Choose your preferred layout for entering items when creating or editing estimates.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            FilterChip(
+                                selected = useTabularForm,
+                                onClick = { viewModel.setUseTabularForm(true) },
+                                label = { Text("Tabular Bill-Book Grid") },
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            FilterChip(
+                                selected = !useTabularForm,
+                                onClick = { viewModel.setUseTabularForm(false) },
+                                label = { Text("Card-Based Form") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
             }
 
             // Sync Queue Card

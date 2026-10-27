@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import com.app.pro.mayurone.data.local.MayurOneDatabase
 import com.app.pro.mayurone.data.local.entity.CustomerEntity
 import com.app.pro.mayurone.data.local.entity.EstimateEntity
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -54,6 +56,15 @@ class MayurOneViewModel(application: Application) : AndroidViewModel(application
     val syncQueue: StateFlow<List<SyncQueueEntity>> = activeTenant.flatMapLatest { tenant ->
         if (tenant != null) repository.getSyncQueueFlow(tenant.tenantId) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val prefs = application.getSharedPreferences("mayurone_settings", Context.MODE_PRIVATE)
+    private val _useTabularForm = MutableStateFlow(prefs.getBoolean("use_tabular_form", true))
+    val useTabularForm: StateFlow<Boolean> = _useTabularForm.asStateFlow()
+
+    fun setUseTabularForm(enabled: Boolean) {
+        prefs.edit().putBoolean("use_tabular_form", enabled).apply()
+        _useTabularForm.value = enabled
+    }
 
     init {
         viewModelScope.launch {

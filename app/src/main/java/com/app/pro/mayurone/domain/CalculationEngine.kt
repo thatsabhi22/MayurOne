@@ -12,13 +12,14 @@ object CalculationEngine {
         weight: Double,
         rate: Double
     ): Double {
-        val qty = BigDecimal.valueOf(quantity.coerceAtLeast(0.0))
+        val qtyMultiplier = BigDecimal.valueOf(if (quantity > 0) quantity else 1.0)
+        val qtyVal = BigDecimal.valueOf(quantity.coerceAtLeast(0.0))
         val wt = BigDecimal.valueOf(weight.coerceAtLeast(0.0))
         val r = BigDecimal.valueOf(rate.coerceAtLeast(0.0))
 
         val amount = when (basis) {
-            CalculationBasis.QTY_X_RATE -> qty.multiply(r)
-            CalculationBasis.WEIGHT_X_RATE -> wt.multiply(r)
+            CalculationBasis.QTY_X_RATE -> qtyVal.multiply(r)
+            CalculationBasis.WEIGHT_X_RATE -> qtyMultiplier.multiply(wt).multiply(r)
         }
 
         return amount.setScale(2, RoundingMode.HALF_UP).toDouble()

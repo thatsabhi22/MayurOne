@@ -16,17 +16,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -61,6 +65,7 @@ fun EstimateFormScreen(
     onNavigateBack: () -> Unit
 ) {
     val activeTenant by viewModel.activeTenant.collectAsState()
+    val useTabularForm by viewModel.useTabularForm.collectAsState()
 
     val existingRevisions by remember(existingEstimateId) {
         if (existingEstimateId != null) {
@@ -89,6 +94,8 @@ fun EstimateFormScreen(
         initialNotes = latestRevision?.notes ?: "Valid for 15 days. Payment terms: 50% advance.",
         initialItems = existingItems,
         nextRevisionNumber = (latestRevision?.revisionNumber ?: 0) + 1,
+        useTabularForm = useTabularForm,
+        onToggleFormStyle = { viewModel.setUseTabularForm(!useTabularForm) },
         onNavigateBack = onNavigateBack,
         onSaveEstimate = { name, phone, address, notes, items, status ->
             if (existingEstimateId != null) {
@@ -128,6 +135,8 @@ fun EstimateFormScreen(
     initialNotes: String = "Valid for 15 days. Payment terms: 50% advance.",
     initialItems: List<EstimateItemEntity> = emptyList(),
     nextRevisionNumber: Int = 1,
+    useTabularForm: Boolean = true,
+    onToggleFormStyle: () -> Unit = {},
     onNavigateBack: () -> Unit = {},
     onSaveEstimate: (
         name: String,
@@ -204,6 +213,14 @@ fun EstimateFormScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    IconButton(onClick = onToggleFormStyle) {
+                        Icon(
+                            imageVector = if (useTabularForm) Icons.Default.ViewAgenda else Icons.Default.TableChart,
+                            contentDescription = if (useTabularForm) "Switch to Card View" else "Switch to Tabular Grid"
+                        )
+                    }
                 }
             )
         }
@@ -253,35 +270,52 @@ fun EstimateFormScreen(
                     }
                 }
 
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                if (useTabularForm) {
+                    item {
                         Text(
-                            "Estimate Line Items",
+                            "Bill-Book Tabular Items",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        OutlinedButton(
-                            onClick = {
-                                itemDrafts.add(EstimateItemDraftState())
-                            }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        TabularItemGrid(
+                            items = itemDrafts,
+                            currencySymbol = activeTenant?.currencySymbol ?: "₹",
+                            onAddItem = { itemDrafts.add(EstimateItemDraftState()) },
+                            onRemoveItem = { index -> itemDrafts.removeAt(index) }
+                        )
+                    }
+                } else {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Item")
+                            Text(
+                                "Estimate Line Items",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            OutlinedButton(
+                                onClick = {
+                                    itemDrafts.add(EstimateItemDraftState())
+                                }
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Add Item")
+                            }
                         }
                     }
-                }
 
-                itemsIndexed(itemDrafts) { index, itemState ->
-                    ItemDraftCard(
-                        index = index + 1,
-                        state = itemState,
-                        onRemove = { itemDrafts.removeAt(index) }
-                    )
+                    itemsIndexed(itemDrafts) { index, itemState ->
+                        ItemDraftCard(
+                            index = index + 1,
+                            state = itemState,
+                            onRemove = { itemDrafts.removeAt(index) }
+                        )
+                    }
                 }
 
                 item {
@@ -537,4 +571,259 @@ fun EstimateFormScreenPreview() {
         )
     }
 }
+
+@Composable
+fun TabularItemGrid(
+    items: List<EstimateItemDraftState>,
+    currencySymbol: String,
+    onAddItem: () -> Unit,
+    onRemoveItem: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            // Table Header Row
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.small
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Qty",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(48.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Item details",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Weight",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(58.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Rate",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(58.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Amount",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(72.dp)
+                    )
+                    Spacer(modifier = Modifier.width(28.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Table Body Rows
+            items.forEachIndexed { index, state ->
+                TabularItemRow(
+                    state = state,
+                    currencySymbol = currencySymbol,
+                    onRemove = { onRemoveItem(index) }
+                )
+                if (index < items.size - 1) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Table Footer Row: Add Item Button & TOTAL Block
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = onAddItem,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Add Row")
+                }
+
+                // Total Highlight Box (Gold/Accent Yellow box like Screenshot 1)
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = MaterialTheme.shapes.small,
+                    shadowElevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "TOTAL: ",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                        Text(
+                            text = CalculationEngine.formatCurrency(
+                                CalculationEngine.calculateTotal(items.map { it.calculatedAmount }),
+                                currencySymbol
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TabularItemRow(
+    state: EstimateItemDraftState,
+    currencySymbol: String,
+    onRemove: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Qty
+        OutlinedTextField(
+            value = state.quantity,
+            onValueChange = { newValue ->
+                state.quantity = newValue.filter { it.isDigit() }
+            },
+            modifier = Modifier
+                .width(48.dp)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused && (state.quantity == "1" || state.quantity == "1.0" || state.quantity == "0")) {
+                        state.quantity = ""
+                    }
+                },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        // Item Details / Particulars
+        OutlinedTextField(
+            value = state.description,
+            onValueChange = { state.description = it },
+            placeholder = { Text("Item...", style = MaterialTheme.typography.bodySmall) },
+            modifier = Modifier.weight(1f),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        // Weight
+        OutlinedTextField(
+            value = state.weight,
+            onValueChange = { newValue ->
+                val filtered = newValue.filter { it.isDigit() || it == '.' }
+                val parts = filtered.split(".")
+                if (parts.size <= 2) {
+                    state.weight = if (parts.size == 2 && parts[1].length > 2) {
+                        "${parts[0]}.${parts[1].take(2)}"
+                    } else {
+                        filtered
+                    }
+                    if (state.weight.isNotBlank() && (state.weight.toDoubleOrNull() ?: 0.0) > 0) {
+                        state.calculationBasis = CalculationBasis.WEIGHT_X_RATE
+                    } else {
+                        state.calculationBasis = CalculationBasis.QTY_X_RATE
+                    }
+                }
+            },
+            modifier = Modifier
+                .width(58.dp)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused && (state.weight == "0" || state.weight == "0.0" || state.weight == "0.00")) {
+                        state.weight = ""
+                    }
+                },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        // Rate
+        OutlinedTextField(
+            value = state.rate,
+            onValueChange = { newValue ->
+                val filtered = newValue.filter { it.isDigit() || it == '.' }
+                val parts = filtered.split(".")
+                if (parts.size <= 2) {
+                    state.rate = if (parts.size == 2 && parts[1].length > 2) {
+                        "${parts[0]}.${parts[1].take(2)}"
+                    } else {
+                        filtered
+                    }
+                }
+            },
+            modifier = Modifier
+                .width(58.dp)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused && (state.rate == "0" || state.rate == "0.0" || state.rate == "0.00")) {
+                        state.rate = ""
+                    }
+                },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+
+        // Amount
+        Text(
+            text = CalculationEngine.formatCurrency(state.calculatedAmount, currencySymbol),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.width(72.dp)
+        )
+
+        // Remove Icon
+        IconButton(
+            onClick = onRemove,
+            modifier = Modifier.width(28.dp)
+        ) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Delete Row",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.height(18.dp)
+            )
+        }
+    }
+}
+
 
