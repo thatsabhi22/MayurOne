@@ -37,12 +37,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.app.pro.mayurone.data.local.entity.EstimateEntity
+import com.app.pro.mayurone.data.local.entity.EstimateItemEntity
+import com.app.pro.mayurone.data.local.entity.EstimateRevisionEntity
+import com.app.pro.mayurone.data.local.entity.ShareEventEntity
+import com.app.pro.mayurone.data.local.entity.TenantEntity
 import com.app.pro.mayurone.data.local.model.CalculationBasis
+import com.app.pro.mayurone.data.local.model.EstimateStatus
 import com.app.pro.mayurone.data.local.model.ShareChannel
 import com.app.pro.mayurone.domain.CalculationEngine
 import com.app.pro.mayurone.pdf.PdfGenerator
 import com.app.pro.mayurone.pdf.ShareHelper
+import com.app.pro.mayurone.ui.theme.MayurOneTheme
 import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -81,6 +89,32 @@ fun EstimateDetailScreen(
 
         ShareHelper.sharePdf(context, fileUri, targetWhatsApp)
     }
+
+    EstimateDetailScreen(
+        estimate = estimate,
+        revisions = revisions,
+        items = items,
+        shareEvents = shareEvents,
+        activeTenant = activeTenant,
+        onNavigateBack = onNavigateBack,
+        onNavigateToNewRevision = { onNavigateToNewRevision(estimateId) },
+        onSharePdf = ::sharePdf
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EstimateDetailScreen(
+    estimate: EstimateEntity?,
+    revisions: List<EstimateRevisionEntity>,
+    items: List<EstimateItemEntity>,
+    shareEvents: List<ShareEventEntity>,
+    activeTenant: TenantEntity?,
+    onNavigateBack: () -> Unit,
+    onNavigateToNewRevision: () -> Unit,
+    onSharePdf: (Boolean) -> Unit
+) {
+    val currentRevision = revisions.firstOrNull()
 
     Scaffold(
         topBar = {
@@ -225,7 +259,7 @@ fun EstimateDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
-                            onClick = { sharePdf(targetWhatsApp = false) },
+                            onClick = { onSharePdf(false) },
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(Icons.Default.Share, contentDescription = null)
@@ -234,7 +268,7 @@ fun EstimateDetailScreen(
                         }
 
                         Button(
-                            onClick = { sharePdf(targetWhatsApp = true) },
+                            onClick = { onSharePdf(true) },
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = null)
@@ -246,7 +280,7 @@ fun EstimateDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
-                        onClick = { onNavigateToNewRevision(estimateId) },
+                        onClick = onNavigateToNewRevision,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null)
@@ -258,3 +292,90 @@ fun EstimateDetailScreen(
         }
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun EstimateDetailScreenPreview() {
+    val sampleTenant = TenantEntity(
+        tenantId = "tenant_1",
+        businessName = "Mayur Traders",
+        ownerName = "Mayur Patel",
+        phone = "9876543210",
+        address = "123 Market Yard, Ahmedabad",
+        currencySymbol = "₹"
+    )
+
+    val sampleEstimate = EstimateEntity(
+        estimateId = "est_1",
+        tenantId = "tenant_1",
+        estimateNumber = "EST-2023-001",
+        status = EstimateStatus.DRAFT,
+        currentRevisionId = "rev_1",
+        createdAt = System.currentTimeMillis() - 86400000L
+    )
+
+    val sampleRevisions = listOf(
+        EstimateRevisionEntity(
+            revisionId = "rev_1",
+            estimateId = "est_1",
+            tenantId = "tenant_1",
+            revisionNumber = 1,
+            customerName = "Acme Corp",
+            customerPhone = "555-0100",
+            customerAddress = "123 Business Rd",
+            notes = "Payment due within 15 days.",
+            totalAmount = 15000.0,
+            createdAt = System.currentTimeMillis() - 86400000L
+        )
+    )
+
+    val sampleItems = listOf(
+        EstimateItemEntity(
+            itemId = "item_1",
+            revisionId = "rev_1",
+            tenantId = "tenant_1",
+            itemOrder = 1,
+            description = "Steel Rods 12mm",
+            quantity = 10.0,
+            rate = 1000.0,
+            calculationBasis = CalculationBasis.QTY_X_RATE,
+            amount = 10000.0
+        ),
+        EstimateItemEntity(
+            itemId = "item_2",
+            revisionId = "rev_1",
+            tenantId = "tenant_1",
+            itemOrder = 2,
+            description = "Cement Bags",
+            weight = 50.0,
+            rate = 100.0,
+            calculationBasis = CalculationBasis.WEIGHT_X_RATE,
+            amount = 5000.0
+        )
+    )
+
+    val sampleShareEvents = listOf(
+        ShareEventEntity(
+            shareId = "share_1",
+            tenantId = "tenant_1",
+            estimateId = "est_1",
+            revisionId = "rev_1",
+            channel = ShareChannel.WHATSAPP,
+            sharedAt = System.currentTimeMillis() - 3600000L
+        )
+    )
+
+    MayurOneTheme {
+        EstimateDetailScreen(
+            estimate = sampleEstimate,
+            revisions = sampleRevisions,
+            items = sampleItems,
+            shareEvents = sampleShareEvents,
+            activeTenant = sampleTenant,
+            onNavigateBack = {},
+            onNavigateToNewRevision = {},
+            onSharePdf = {}
+        )
+    }
+}
+
