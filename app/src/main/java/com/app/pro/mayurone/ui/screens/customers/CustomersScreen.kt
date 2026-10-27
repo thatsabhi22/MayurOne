@@ -32,12 +32,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.app.pro.mayurone.data.local.entity.CustomerEntity
+import com.app.pro.mayurone.ui.theme.MayurOneTheme
 import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
 
 @Composable
 fun CustomersScreen(viewModel: MayurOneViewModel) {
     val customers by viewModel.customers.collectAsState()
+    CustomersScreen(
+        customers = customers,
+        onSaveCustomer = { name, phone, address, notes ->
+            viewModel.saveCustomer(name, phone, address, notes)
+        }
+    )
+}
+
+@Composable
+fun CustomersScreen(
+    customers: List<CustomerEntity>,
+    onSaveCustomer: (name: String, phone: String, address: String, notes: String) -> Unit = { _, _, _, _ -> }
+) {
     var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -151,7 +167,7 @@ fun CustomersScreen(viewModel: MayurOneViewModel) {
                 TextButton(
                     onClick = {
                         if (name.isNotBlank()) {
-                            viewModel.saveCustomer(name, phone, address, notes)
+                            onSaveCustomer(name, phone, address, notes)
                             showAddDialog = false
                         }
                     }
@@ -164,6 +180,33 @@ fun CustomersScreen(viewModel: MayurOneViewModel) {
                     Text("Cancel")
                 }
             }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CustomersScreenPreview() {
+    MayurOneTheme {
+        CustomersScreen(
+            customers = listOf(
+                CustomerEntity(
+                    customerId = "1",
+                    tenantId = "tenant1",
+                    name = "John Doe",
+                    phone = "555-0199",
+                    address = "123 Main St, Springfield",
+                    notes = "Regular customer"
+                ),
+                CustomerEntity(
+                    customerId = "2",
+                    tenantId = "tenant1",
+                    name = "Jane Smith",
+                    phone = "555-0148",
+                    address = "456 Oak Ave, Metropolis",
+                    notes = ""
+                )
+            )
         )
     }
 }

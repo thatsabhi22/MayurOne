@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -38,14 +37,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.app.pro.mayurone.data.local.entity.EstimateEntity
+import com.app.pro.mayurone.data.local.entity.EstimateRevisionEntity
 import com.app.pro.mayurone.data.local.model.EstimateStatus
 import com.app.pro.mayurone.domain.CalculationEngine
+import com.app.pro.mayurone.ui.theme.MayurOneTheme
 import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun EstimatesScreen(
@@ -56,6 +59,24 @@ fun EstimatesScreen(
     val estimates by viewModel.estimates.collectAsState()
     val activeTenant by viewModel.activeTenant.collectAsState()
 
+    EstimatesScreen(
+        estimates = estimates,
+        currencySymbol = activeTenant?.currencySymbol ?: "₹",
+        getRevisionFlow = { viewModel.getRevisionFlow(it) },
+        onNavigateToCreate = onNavigateToCreate,
+        onNavigateToDetail = onNavigateToDetail
+    )
+}
+
+@Composable
+fun EstimatesScreen(
+    estimates: List<EstimateEntity>,
+    currencySymbol: String = "₹",
+    getRevisionFlow: ((String) -> Flow<EstimateRevisionEntity?>)? = null,
+    getRevision: ((String) -> EstimateRevisionEntity?)? = null,
+    onNavigateToCreate: () -> Unit = {},
+    onNavigateToDetail: (String) -> Unit = {}
+) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -142,9 +163,10 @@ fun EstimatesScreen(
                 ) {
                     items(filteredEstimates, key = { it.estimateId }) { estimate ->
                         EstimateCard(
-                            viewModel = viewModel,
                             estimate = estimate,
-                            currencySymbol = activeTenant?.currencySymbol ?: "₹",
+                            currencySymbol = currencySymbol,
+                            getRevisionFlow = getRevisionFlow,
+                            getRevision = getRevision,
                             onClick = { onNavigateToDetail(estimate.estimateId) }
                         )
                     }
@@ -156,14 +178,15 @@ fun EstimatesScreen(
 
 @Composable
 fun EstimateCard(
-    viewModel: MayurOneViewModel,
     estimate: EstimateEntity,
     currencySymbol: String,
+    getRevisionFlow: ((String) -> Flow<EstimateRevisionEntity?>)? = null,
+    getRevision: ((String) -> EstimateRevisionEntity?)? = null,
     onClick: () -> Unit
 ) {
-    val currentRevision by estimate.currentRevisionId?.let {
-        viewModel.getRevisionFlow(it).collectAsState(initial = null)
-    } ?: remember { mutableStateOf(null) }
+    val currentRevision = estimate.currentRevisionId?.let { revId ->
+        getRevision?.invoke(revId) ?: getRevisionFlow?.invoke(revId)?.collectAsState(initial = null)?.value
+    }
 
     Card(
         modifier = Modifier
@@ -230,3 +253,62 @@ fun EstimateCard(
         }
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun EstimatesScreenPreview() {
+    val sampleEstimates = listOf(
+        EstimateEntity(
+            estimateId = "est_1",
+            tenantId = "tenant_1",
+            estimateNumber = "EST-2023-001",
+            status = EstimateStatus.DRAFT,
+            currentRevisionId = "rev_1",
+            createdAt = System.currentTimeMillis() - 86400000L
+        ),
+        EstimateEntity(
+            estimateId = "est_2",
+            tenantId = "tenant_1",
+            estimateNumber = "EST-2023-002",
+            status = EstimateStatus.FINAL,
+            currentRevisionId = "rev_2",
+            createdAt = System.currentTimeMillis()
+        )
+    )
+
+    val sampleRevisions = mapOf(
+        "rev_1" to EstimateRevisionEntity(
+            revisionId = "rev_1",
+            estimateId = "est_1",
+            tenantId = "tenant_1",
+            revisionNumber = 1,
+            customerName = "Acme Corp",
+            customerPhone = "555-0100",
+            customerAddress = "123 Business Rd",
+            notes = "Draft estimate for office supplies",
+            totalAmount = 15000.0,
+            createdAt = System.currentTimeMillis() - 86400000L
+        ),
+        "rev_2" to EstimateRevisionEntity(
+            revisionId = "rev_2",
+            estimateId = "est_2",
+            tenantId = "tenant_1",
+            revisionNumber = 2,
+            customerName = "Global Logistics",
+            customerPhone = "555-0200",
+            customerAddress = "456 Commerce St",
+            notes = "Finalized estimate",
+            totalAmount = 48500.50,
+            createdAt = System.currentTimeMillis()
+        )
+    )
+
+    MayurOneTheme {
+        EstimatesScreen(
+            estimates = sampleEstimates,
+            currencySymbol = "₹",
+            getRevision = { revisionId -> sampleRevisions[revisionId] }
+        )
+    }
+}
+
