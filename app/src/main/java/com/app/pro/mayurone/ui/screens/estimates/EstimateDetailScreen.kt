@@ -340,13 +340,16 @@ fun EstimateDetailScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    val nextRevNum = (currentRevision?.revisionNumber ?: 1) + 1
+                    val buttonText = if (estimate?.status == EstimateStatus.DRAFT) "Edit Draft (Rev #$nextRevNum)" else "Create New Revision (#$nextRevNum)"
+
                     Button(
                         onClick = onNavigateToNewRevision,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Create New Revision")
+                        Text(buttonText)
                     }
                 }
             }

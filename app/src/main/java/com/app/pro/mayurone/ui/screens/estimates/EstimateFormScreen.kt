@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.app.pro.mayurone.data.local.entity.EstimateItemEntity
 import com.app.pro.mayurone.data.local.entity.TenantEntity
 import com.app.pro.mayurone.data.local.model.CalculationBasis
 import com.app.pro.mayurone.data.local.model.EstimateStatus
@@ -51,6 +52,7 @@ import com.app.pro.mayurone.data.repository.EstimateItemDraft
 import com.app.pro.mayurone.domain.CalculationEngine
 import com.app.pro.mayurone.ui.theme.MayurOneTheme
 import com.app.pro.mayurone.ui.viewmodel.MayurOneViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,9 +63,33 @@ fun EstimateFormScreen(
 ) {
     val activeTenant by viewModel.activeTenant.collectAsState()
 
+    val existingRevisions by remember(existingEstimateId) {
+        if (existingEstimateId != null) {
+            viewModel.getRevisionsForEstimateFlow(existingEstimateId)
+        } else {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        }
+    }.collectAsState(initial = emptyList())
+
+    val latestRevision = existingRevisions.firstOrNull()
+
+    val existingItems by remember(latestRevision?.revisionId) {
+        if (latestRevision != null) {
+            viewModel.getItemsForRevisionFlow(latestRevision.revisionId)
+        } else {
+            kotlinx.coroutines.flow.flowOf(emptyList())
+        }
+    }.collectAsState(initial = emptyList())
+
     EstimateFormScreen(
         activeTenant = activeTenant,
         existingEstimateId = existingEstimateId,
+        initialCustomerName = latestRevision?.customerName ?: "",
+        initialCustomerPhone = latestRevision?.customerPhone ?: "",
+        initialCustomerAddress = latestRevision?.customerAddress ?: "",
+        initialNotes = latestRevision?.notes ?: "Valid for 15 days. Payment terms: 50% advance.",
+        initialItems = existingItems,
+        nextRevisionNumber = (latestRevision?.revisionNumber ?: 0) + 1,
         onNavigateBack = onNavigateBack,
         onSaveEstimate = { name, phone, address, notes, items, status ->
             if (existingEstimateId != null) {
@@ -97,6 +123,12 @@ fun EstimateFormScreen(
 fun EstimateFormScreen(
     activeTenant: TenantEntity?,
     existingEstimateId: String? = null,
+    initialCustomerName: String = "",
+    initialCustomerPhone: String = "",
+    initialCustomerAddress: String = "",
+    initialNotes: String = "Valid for 15 days. Payment terms: 50% advance.",
+    initialItems: List<EstimateItemEntity> = emptyList(),
+    nextRevisionNumber: Int = 1,
     onNavigateBack: () -> Unit = {},
     onSaveEstimate: (
         name: String,
@@ -107,18 +139,33 @@ fun EstimateFormScreen(
         status: EstimateStatus
     ) -> Unit = { _, _, _, _, _, _ -> }
 ) {
-    var customerName by remember { mutableStateOf("") }
-    var customerPhone by remember { mutableStateOf("") }
-    var customerAddress by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("Valid for 15 days. Payment terms: 50% advance.") }
+    var customerName by remember(initialCustomerName) { mutableStateOf(initialCustomerName) }
+    var customerPhone by remember(initialCustomerPhone) { mutableStateOf(initialCustomerPhone) }
+    var customerAddress by remember(initialCustomerAddress) { mutableStateOf(initialCustomerAddress) }
+    var notes by remember(initialNotes) { mutableStateOf(initialNotes) }
 
     val itemDrafts = remember { mutableStateListOf<EstimateItemDraftState>() }
 
     // Populate existing revision if editing / creating new revision
-    LaunchedEffect(existingEstimateId) {
-        if (existingEstimateId != null) {
-            // Load latest revision details if editing
-        } else if (itemDrafts.isEmpty()) {
+    LaunchedEffect(initialItems, existingEstimateId) {
+        if (initialItems.isNotEmpty()) {
+            itemDrafts.clear()
+            initialItems.forEach { item ->
+                val qStr = if (item.quantity % 1.0 == 0.0) item.quantity.toLong().toString() else item.quantity.toString()
+                val wStr = if (item.weight % 1.0 == 0.0) item.weight.toLong().toString() else String.format(Locale.US, "%.2f", item.weight)
+                val rStr = if (item.rate % 1.0 == 0.0) item.rate.toLong().toString() else String.format(Locale.US, "%.2f", item.rate)
+
+                itemDrafts.add(
+                    EstimateItemDraftState(
+                        description = item.description,
+                        quantity = qStr,
+                        weight = wStr,
+                        rate = rStr,
+                        calculationBasis = item.calculationBasis
+                    )
+                )
+            }
+        } else if (itemDrafts.isEmpty() && existingEstimateId == null) {
             itemDrafts.add(
                 EstimateItemDraftState(
                     description = "Mild Steel Frame",
@@ -153,7 +200,7 @@ fun EstimateFormScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (existingEstimateId != null) "New Revision" else "Create Estimate") },
+                title = { Text(if (existingEstimateId != null) "New Revision (#$nextRevisionNumber)" else "Create Estimate") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
