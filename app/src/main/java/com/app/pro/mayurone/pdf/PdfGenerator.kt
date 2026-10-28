@@ -176,7 +176,7 @@ object PdfGenerator {
         canvas.drawLine(leftMargin, 800f, rightMargin, 800f, paint)
         paint.textSize = 8f
         paint.color = Color.GRAY
-        canvas.drawText("Generated via MayurOne SaaS App - Digital Fabrication Estimate Manager", leftMargin, 815f, paint)
+        canvas.drawText("Generated via MayurOne App - Digital Estimate Manager", leftMargin, 815f, paint)
 
         pdfDocument.finishPage(page)
 
