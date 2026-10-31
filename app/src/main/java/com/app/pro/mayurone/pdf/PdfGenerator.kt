@@ -18,6 +18,7 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 object PdfGenerator {
 
@@ -117,9 +118,9 @@ object PdfGenerator {
         canvas.drawText("#", leftMargin + 8f, y + 16f, boldPaint)
         canvas.drawText("Item Description", leftMargin + 30f, y + 16f, boldPaint)
         canvas.drawText("Qty", leftMargin + 250f, y + 16f, boldPaint)
-        canvas.drawText("Weight", leftMargin + 320f, y + 16f, boldPaint)
-        canvas.drawText("Rate", leftMargin + 390f, y + 16f, boldPaint)
-        canvas.drawText("Amount", leftMargin + 460f, y + 16f, boldPaint)
+        canvas.drawText("Weight(kg)", leftMargin + 320f, y + 16f, boldPaint)
+        canvas.drawText("Rate(₹)", leftMargin + 390f, y + 16f, boldPaint)
+        canvas.drawText("Amount(₹)", leftMargin + 460f, y + 16f, boldPaint)
 
         y += 24f
 
@@ -134,14 +135,14 @@ object PdfGenerator {
             val desc = if (item.description.length > 32) item.description.take(30) + "..." else item.description
             canvas.drawText(desc, leftMargin + 30f, rowY, paint)
 
-            val basisLabel = if (item.calculationBasis == CalculationBasis.) "Qty x Rate" else "Wt x Rate"
-            canvas.drawText(basisLabel, leftMargin + 250f, rowY, paint)
+            //val basisLabel = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "Qty x Rate" else "Wt x Rate"
+            canvas.drawText("${item.quantity.roundToInt()}", leftMargin + 250f, rowY, paint)
 
-            val qtyWtStr = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "${item.quantity}" else "${item.weight} kg"
+            val qtyWtStr = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "${item.quantity}" else "${item.weight}"
             canvas.drawText(qtyWtStr, leftMargin + 320f, rowY, paint)
 
-            canvas.drawText("₹ ${item.rate}", leftMargin + 390f, rowY, paint)
-            canvas.drawText("₹ ${item.amount}", leftMargin + 460f, rowY, paint)
+            canvas.drawText("₹ ${item.rate.roundToInt()}", leftMargin + 390f, rowY, paint)
+            canvas.drawText("₹ ${item.amount.roundToInt()}", leftMargin + 460f, rowY, paint)
 
             y += 24f
             paint.color = Color.parseColor("#F9FAFB")
