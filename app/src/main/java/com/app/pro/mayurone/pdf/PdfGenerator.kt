@@ -37,6 +37,11 @@ object PdfGenerator {
         val paint = Paint()
         val titlePaint = Paint()
         val boldPaint = Paint()
+        val rightPaint = Paint().apply { textAlign = Paint.Align.RIGHT }
+        val rightBoldPaint = Paint().apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.RIGHT
+        }
 
         var y = 40f
         val leftMargin = 36f
@@ -60,7 +65,7 @@ object PdfGenerator {
         val subtitle = "$shopOwnerName ${tenant.phone}"
         canvas.drawText(subtitle, leftMargin + 16f, y + 48f, paint)
 
-        y += 75f
+        y += 95f
 
         // Document Details Section
         boldPaint.color = Color.BLACK
@@ -68,9 +73,9 @@ object PdfGenerator {
         boldPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         canvas.drawText("ESTIMATE", leftMargin, y, boldPaint)
 
-        boldPaint.textSize = 10f
-        boldPaint.color = Color.DKGRAY
-        canvas.drawText("Number: ${estimate.estimateNumber}", rightMargin - 150f, y, boldPaint)
+        rightBoldPaint.textSize = 10f
+        rightBoldPaint.color = Color.DKGRAY
+        canvas.drawText("Number: ${estimate.estimateNumber}", rightMargin, y, rightBoldPaint)
 
         y += 16f
         paint.color = Color.GRAY
@@ -78,7 +83,9 @@ object PdfGenerator {
         val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
         val dateStr = dateFormat.format(Date(revision.createdAt))
         canvas.drawText("Revision #${revision.revisionNumber} (${estimate.status})", leftMargin, y, paint)
-        canvas.drawText("Date: $dateStr", rightMargin - 150f, y, paint)
+        rightPaint.textSize = 10f
+        rightPaint.color = Color.GRAY
+        canvas.drawText("Date : $dateStr", rightMargin, y, rightPaint)
 
         y += 24f
 
@@ -99,12 +106,12 @@ object PdfGenerator {
 
         paint.textSize = 10f
         paint.color = Color.parseColor("#374151")
-        canvas.drawText("Name: ${revision.customerName}", leftMargin + 12f, y + 34f, paint)
+        canvas.drawText("Name : ${revision.customerName}", leftMargin + 12f, y + 34f, paint)
         if (revision.customerPhone.isNotBlank()) {
-            canvas.drawText("Phone: ${revision.customerPhone}", leftMargin + 200f, y + 34f, paint)
+            canvas.drawText("Phone : ${revision.customerPhone}", leftMargin + 200f, y + 34f, paint)
         }
         if (revision.customerAddress.isNotBlank()) {
-            canvas.drawText("Address: ${revision.customerAddress}", leftMargin + 12f, y + 48f, paint)
+            canvas.drawText("Address : ${revision.customerAddress}", leftMargin + 12f, y + 48f, paint)
         }
 
         y += 80f
@@ -115,18 +122,28 @@ object PdfGenerator {
 
         boldPaint.textSize = 10f
         boldPaint.color = Color.BLACK
+        rightBoldPaint.textSize = 10f
+        rightBoldPaint.color = Color.BLACK
+
+        val colQty = leftMargin + 275f
+        val colWeight = leftMargin + 355f
+        val colRate = leftMargin + 435f
+        val colAmount = rightMargin - 8f
+
         canvas.drawText("#", leftMargin + 8f, y + 16f, boldPaint)
         canvas.drawText("Item Description", leftMargin + 30f, y + 16f, boldPaint)
-        canvas.drawText("Qty", leftMargin + 250f, y + 16f, boldPaint)
-        canvas.drawText("Weight(kg)", leftMargin + 320f, y + 16f, boldPaint)
-        canvas.drawText("Rate(₹)", leftMargin + 390f, y + 16f, boldPaint)
-        canvas.drawText("Amount(₹)", leftMargin + 460f, y + 16f, boldPaint)
+        canvas.drawText("Qty", colQty, y + 16f, rightBoldPaint)
+        canvas.drawText("Weight (kg)", colWeight, y + 16f, rightBoldPaint)
+        canvas.drawText("Rate (₹)", colRate, y + 16f, rightBoldPaint)
+        canvas.drawText("Amount (₹)", colAmount, y + 16f, rightBoldPaint)
 
         y += 24f
 
         // Table Rows
         paint.textSize = 10f
         paint.color = Color.BLACK
+        rightPaint.textSize = 10f
+        rightPaint.color = Color.BLACK
 
         for ((index, item) in items.withIndex()) {
             val rowY = y + 18f
@@ -136,13 +153,13 @@ object PdfGenerator {
             canvas.drawText(desc, leftMargin + 30f, rowY, paint)
 
             //val basisLabel = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "Qty x Rate" else "Wt x Rate"
-            canvas.drawText("${item.quantity.roundToInt()}", leftMargin + 250f, rowY, paint)
+            canvas.drawText("${item.quantity.roundToInt()}", colQty, rowY, rightPaint)
 
-            val qtyWtStr = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "${item.quantity}" else "${item.weight}"
-            canvas.drawText(qtyWtStr, leftMargin + 320f, rowY, paint)
+            val qtyWtStr = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "-" else "${item.weight}"
+            canvas.drawText(qtyWtStr, colWeight, rowY, rightPaint)
 
-            canvas.drawText("₹ ${item.rate.roundToInt()}", leftMargin + 390f, rowY, paint)
-            canvas.drawText("₹ ${item.amount.roundToInt()}", leftMargin + 460f, rowY, paint)
+            canvas.drawText("${item.rate.roundToInt()}", colRate, rowY, rightPaint)
+            canvas.drawText("${item.amount.roundToInt()}", colAmount, rowY, rightPaint)
 
             y += 24f
             paint.color = Color.parseColor("#F9FAFB")
