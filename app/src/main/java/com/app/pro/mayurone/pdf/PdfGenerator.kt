@@ -54,7 +54,9 @@ object PdfGenerator {
         paint.color = Color.WHITE
         paint.textSize = 10f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-        val subtitle = "${tenant.ownerName} | ${tenant.phone}"
+
+        val shopOwnerName = if (tenant.ownerName == "Shop Owner") "" else tenant.ownerName + " | "
+        val subtitle = "$shopOwnerName ${tenant.phone}"
         canvas.drawText(subtitle, leftMargin + 16f, y + 48f, paint)
 
         y += 75f
@@ -72,7 +74,7 @@ object PdfGenerator {
         y += 16f
         paint.color = Color.GRAY
         paint.textSize = 10f
-        val dateFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
         val dateStr = dateFormat.format(Date(revision.createdAt))
         canvas.drawText("Revision #${revision.revisionNumber} (${estimate.status})", leftMargin, y, paint)
         canvas.drawText("Date: $dateStr", rightMargin - 150f, y, paint)
@@ -114,8 +116,8 @@ object PdfGenerator {
         boldPaint.color = Color.BLACK
         canvas.drawText("#", leftMargin + 8f, y + 16f, boldPaint)
         canvas.drawText("Item Description", leftMargin + 30f, y + 16f, boldPaint)
-        canvas.drawText("Basis", leftMargin + 250f, y + 16f, boldPaint)
-        canvas.drawText("Qty / Wt", leftMargin + 320f, y + 16f, boldPaint)
+        canvas.drawText("Qty", leftMargin + 250f, y + 16f, boldPaint)
+        canvas.drawText("Weight", leftMargin + 320f, y + 16f, boldPaint)
         canvas.drawText("Rate", leftMargin + 390f, y + 16f, boldPaint)
         canvas.drawText("Amount", leftMargin + 460f, y + 16f, boldPaint)
 
@@ -132,7 +134,7 @@ object PdfGenerator {
             val desc = if (item.description.length > 32) item.description.take(30) + "..." else item.description
             canvas.drawText(desc, leftMargin + 30f, rowY, paint)
 
-            val basisLabel = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "Qty x Rate" else "Wt x Rate"
+            val basisLabel = if (item.calculationBasis == CalculationBasis.) "Qty x Rate" else "Wt x Rate"
             canvas.drawText(basisLabel, leftMargin + 250f, rowY, paint)
 
             val qtyWtStr = if (item.calculationBasis == CalculationBasis.QTY_X_RATE) "${item.quantity}" else "${item.weight} kg"
