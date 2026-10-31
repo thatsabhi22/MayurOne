@@ -34,13 +34,18 @@ object PdfGenerator {
         val page = pdfDocument.startPage(pageInfo)
         val canvas: Canvas = page.canvas
 
-        val paint = Paint()
-        val titlePaint = Paint()
-        val boldPaint = Paint()
-        val rightPaint = Paint().apply { textAlign = Paint.Align.RIGHT }
+        val letterSpacing = 0.05f
+        val paint = Paint().apply { this.letterSpacing = letterSpacing }
+        val titlePaint = Paint().apply { this.letterSpacing = letterSpacing }
+        val boldPaint = Paint().apply { this.letterSpacing = letterSpacing }
+        val rightPaint = Paint().apply {
+            textAlign = Paint.Align.RIGHT
+            this.letterSpacing = letterSpacing
+        }
         val rightBoldPaint = Paint().apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.RIGHT
+            this.letterSpacing = letterSpacing
         }
 
         var y = 40f

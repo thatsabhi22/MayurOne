@@ -1,8 +1,8 @@
 package com.app.pro.mayurone.ui
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -106,7 +106,9 @@ fun MayurOneApp(viewModel: MayurOneViewModel) {
         NavGraph(
             navController = navController,
             viewModel = viewModel,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
         )
     }
 }
